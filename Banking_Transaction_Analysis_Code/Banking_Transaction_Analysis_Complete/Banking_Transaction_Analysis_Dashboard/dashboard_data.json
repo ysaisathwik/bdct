@@ -1,0 +1,51 @@
+{
+  "transaction_types": 4,
+  "total_transactions": 1000,
+  "successful_transactions": 912,
+  "non_successful_transactions": 88,
+  "total_amount": 50290313.21,
+  "successful_amount": 46073340.86,
+  "success_rate_pct": 91.2,
+  "by_type": [
+    {
+      "transaction_type": "DEPOSIT",
+      "total_transactions": 242,
+      "total_amount": 12339060.1,
+      "successful_transactions": 218,
+      "successful_amount": 11135099.24,
+      "non_successful_transactions": 24,
+      "success_rate_pct": 90.08,
+      "non_successful_amount": 1203960.8599999994
+    },
+    {
+      "transaction_type": "PAYMENT",
+      "total_transactions": 256,
+      "total_amount": 12344715.56,
+      "successful_transactions": 233,
+      "successful_amount": 11262479.05,
+      "non_successful_transactions": 23,
+      "success_rate_pct": 91.02,
+      "non_successful_amount": 1082236.5099999998
+    },
+    {
+      "transaction_type": "TRANSFER",
+      "total_transactions": 247,
+      "total_amount": 12913154.28,
+      "successful_transactions": 230,
+      "successful_amount": 12032892.78,
+      "non_successful_transactions": 17,
+      "success_rate_pct": 93.12,
+      "non_successful_amount": 880261.5
+    },
+    {
+      "transaction_type": "WITHDRAWAL",
+      "total_transactions": 255,
+      "total_amount": 12693383.27,
+      "successful_transactions": 231,
+      "successful_amount": 11642869.79,
+      "non_successful_transactions": 24,
+      "success_rate_pct": 90.59,
+      "non_successful_amount": 1050513.4800000004
+    }
+  ]
+}

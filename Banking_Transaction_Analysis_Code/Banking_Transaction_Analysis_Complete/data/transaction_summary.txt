@@ -1,0 +1,9 @@
+BANKING TRANSACTION ANALYSIS
+============================
+Transaction types: 4
+Total transactions: 1000
+Successful transactions: 912
+Failed/non-success transactions: 88
+Total amount: 50290313.21
+Successful amount: 46073340.86
+Success rate: 91.20%

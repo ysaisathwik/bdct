@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banking Transaction Analysis Dashboard</title>
+<style>
+:root { font-family: Inter, Segoe UI, Arial, sans-serif; color:#172033; background:#f4f7fb; }
+* { box-sizing:border-box; }
+body { margin:0; }
+header { background:#13233f; color:white; padding:28px clamp(18px,4vw,48px); }
+header h1 { margin:0 0 8px; font-size:clamp(24px,3vw,34px); }
+header p { margin:0; color:#d7e2f4; }
+main { max-width:1200px; margin:0 auto; padding:24px clamp(14px,3vw,32px) 40px; }
+.note { padding:12px 14px; background:#fff8e6; border:1px solid #f0d99c; border-radius:10px; margin-bottom:18px; color:#614d16; }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:18px; }
+.card { background:white; border:1px solid #e3e9f2; border-radius:14px; padding:18px; box-shadow:0 2px 8px rgba(20,35,60,.04); }
+.kpi-label { color:#64748b; font-size:13px; margin-bottom:9px; }
+.kpi-value { font-size:clamp(23px,3vw,30px); font-weight:750; letter-spacing:-.5px; }
+.kpi-sub { color:#64748b; font-size:12px; margin-top:7px; }
+.charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr)); gap:16px; }
+.chart-card h2 { font-size:17px; margin:0 0 10px; }
+canvas { width:100%; height:280px; display:block; }
+.table-wrap { overflow:auto; }
+table { border-collapse:collapse; width:100%; min-width:720px; }
+th,td { padding:12px 10px; text-align:right; border-bottom:1px solid #edf0f5; font-size:13px; }
+th:first-child,td:first-child { text-align:left; }
+th { color:#64748b; font-weight:650; background:#fafbfd; }
+footer { margin-top:18px; color:#64748b; font-size:12px; line-height:1.6; }
+.pill { display:inline-block; background:#eaf4ee; color:#236342; border-radius:999px; padding:4px 8px; font-size:12px; font-weight:650; }
+@media(max-width:520px) { canvas { height:240px; } .card { padding:14px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Banking Transaction Analysis</h1>
+  <p>Transaction volumes, values and success-rate overview</p>
+</header>
+<main>
+  <div class="note"><strong>Data note:</strong> Dashboard built from your local Python mapper/reducer output. It summarizes synthetic project data; it does not connect to a live bank, Hadoop, HDFS or Hive.</div>
+  <section class="kpis" id="kpis"></section>
+  <section class="charts">
+    <article class="card chart-card"><h2>Transaction count by type</h2><canvas id="countChart" aria-label="Bar chart of transaction count by type"></canvas></article>
+    <article class="card chart-card"><h2>Total amount by type</h2><canvas id="amountChart" aria-label="Bar chart of transaction amount by type"></canvas></article>
+    <article class="card chart-card"><h2>Successful vs non-successful</h2><canvas id="statusChart" aria-label="Bar chart of successful and non-successful transactions"></canvas></article>
+    <article class="card chart-card"><h2>Success rate by type</h2><canvas id="rateChart" aria-label="Bar chart of success rate by type"></canvas></article>
+  </section>
+  <article class="card" style="margin-top:16px">
+    <h2 style="font-size:17px;margin:0 0 12px">Transaction type details</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Type</th><th>Count</th><th>Successful</th><th>Non-successful</th><th>Success rate</th><th>Total amount</th><th>Successful amount</th></tr></thead>
+      <tbody id="details"></tbody>
+    </table></div>
+  </article>
+  <footer>Success is defined as status = SUCCESS in the mapper. “Non-successful” includes every other status. Amounts are shown in dataset units; the currency was not specified in the source data.</footer>
+</main>
+<script>
+const rows = [{"transaction_type": "DEPOSIT", "total_transactions": 242, "total_amount": 12339060.1, "successful_transactions": 218, "successful_amount": 11135099.24, "non_successful_transactions": 24, "success_rate_pct": 90.08, "non_successful_amount": 1203960.8599999994}, {"transaction_type": "PAYMENT", "total_transactions": 256, "total_amount": 12344715.56, "successful_transactions": 233, "successful_amount": 11262479.05, "non_successful_transactions": 23, "success_rate_pct": 91.02, "non_successful_amount": 1082236.5099999998}, {"transaction_type": "TRANSFER", "total_transactions": 247, "total_amount": 12913154.28, "successful_transactions": 230, "successful_amount": 12032892.78, "non_successful_transactions": 17, "success_rate_pct": 93.12, "non_successful_amount": 880261.5}, {"transaction_type": "WITHDRAWAL", "total_transactions": 255, "total_amount": 12693383.27, "successful_transactions": 231, "successful_amount": 11642869.79, "non_successful_transactions": 24, "success_rate_pct": 90.59, "non_successful_amount": 1050513.4800000004}];
+const fmtInt = n => new Intl.NumberFormat('en-IN',{maximumFractionDigits:0}).format(n);
+const fmtAmt = n => new Intl.NumberFormat('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const total = rows.reduce((s,r)=>s+r.total_transactions,0);
+const successful = rows.reduce((s,r)=>s+r.successful_transactions,0);
+const nonSuccess = total-successful;
+const amount = rows.reduce((s,r)=>s+r.total_amount,0);
+const successfulAmount = rows.reduce((s,r)=>s+r.successful_amount,0);
+const rate = successful/total*100;
+document.getElementById('kpis').innerHTML = [
+ ['Total transactions',fmtInt(total),'Across 4 transaction types'],
+ ['Successful transactions',fmtInt(successful),rate.toFixed(2)+'% success rate'],
+ ['Non-successful transactions',fmtInt(nonSuccess),(100-rate).toFixed(2)+'% of transactions'],
+ ['Total transaction amount',fmtAmt(amount),'Dataset amount units'],
+].map(k=>`<article class="card"><div class="kpi-label">${k[0]}</div><div class="kpi-value">${k[1]}</div><div class="kpi-sub">${k[2]}</div></article>`).join('');
+document.getElementById('details').innerHTML = rows.map(r=>`<tr><td><strong>${r.transaction_type}</strong></td><td>${fmtInt(r.total_transactions)}</td><td>${fmtInt(r.successful_transactions)}</td><td>${fmtInt(r.total_transactions-r.successful_transactions)}</td><td>${(r.successful_transactions/r.total_transactions*100).toFixed(2)}%</td><td>${fmtAmt(r.total_amount)}</td><td>${fmtAmt(r.successful_amount)}</td></tr>`).join('');
+function drawBarChart(id, labels, values, formatter, suffix='') {
+ const canvas=document.getElementById(id), ctx=canvas.getContext('2d');
+ const dpr=window.devicePixelRatio||1, rect=canvas.getBoundingClientRect();
+ canvas.width=rect.width*dpr; canvas.height=rect.height*dpr; ctx.scale(dpr,dpr);
+ const w=rect.width,h=rect.height, left=58,right=12,top=18,bottom=48;
+ const plotW=w-left-right, plotH=h-top-bottom, max=Math.max(...values)*1.12 || 1;
+ ctx.clearRect(0,0,w,h); ctx.font='11px Segoe UI, Arial'; ctx.fillStyle='#64748b'; ctx.strokeStyle='#e7ecf3'; ctx.lineWidth=1;
+ for(let i=0;i<=4;i++){const v=max*i/4,y=top+plotH-(v/max)*plotH;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();ctx.textAlign='right';ctx.fillText(formatter(v),left-8,y+4);}
+ const slot=plotW/labels.length, bw=Math.min(52,slot*.54);
+ values.forEach((v,i)=>{const bh=v/max*plotH,x=left+i*slot+(slot-bw)/2,y=top+plotH-bh;ctx.fillStyle='#3976c5';ctx.fillRect(x,y,bw,bh);ctx.fillStyle='#334155';ctx.textAlign='center';ctx.font='11px Segoe UI, Arial';ctx.fillText(formatter(v)+suffix,x+bw/2,Math.max(12,y-6));ctx.fillText(labels[i],x+bw/2,h-21);});
+}
+function drawRate(id, labels, values) {
+ const canvas=document.getElementById(id),ctx=canvas.getContext('2d'),dpr=window.devicePixelRatio||1,rect=canvas.getBoundingClientRect();
+ canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
+ const w=rect.width,h=rect.height,left=48,right=12,top=18,bottom=48,plotW=w-left-right,plotH=h-top-bottom,max=100;
+ ctx.clearRect(0,0,w,h);ctx.font='11px Segoe UI, Arial';ctx.fillStyle='#64748b';ctx.strokeStyle='#e7ecf3';
+ for(let i=0;i<=4;i++){let v=i*25,y=top+plotH-v/100*plotH;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(w-right,y);ctx.stroke();ctx.textAlign='right';ctx.fillText(v+'%',left-8,y+4);}
+ const slot=plotW/labels.length,bw=Math.min(52,slot*.54);
+ values.forEach((v,i)=>{let bh=v/100*plotH,x=left+i*slot+(slot-bw)/2,y=top+plotH-bh;ctx.fillStyle='#32966f';ctx.fillRect(x,y,bw,bh);ctx.fillStyle='#334155';ctx.textAlign='center';ctx.fillText(v.toFixed(1)+'%',x+bw/2,y-6);ctx.fillText(labels[i],x+bw/2,h-21);});
+}
+function render(){drawBarChart('countChart',rows.map(r=>r.transaction_type),rows.map(r=>r.total_transactions),v=>Math.round(v).toString());drawBarChart('amountChart',rows.map(r=>r.transaction_type),rows.map(r=>r.total_amount),v=>Math.round(v/100000)/10+'L');drawBarChart('statusChart',['Successful','Non-success'],[successful,nonSuccess],v=>Math.round(v).toString());drawRate('rateChart',rows.map(r=>r.transaction_type),rows.map(r=>r.successful_transactions/r.total_transactions*100));}
+render();window.addEventListener('resize',render);
+</script>
+</body>
+</html>
